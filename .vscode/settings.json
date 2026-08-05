@@ -1,0 +1,11 @@
+{
+    "editor.quickSuggestions": {
+        "comments": "on",
+        "strings": "on",
+        "other": "on"
+    },
+    "editor.suggestOnTriggerCharacters": true,
+    "editor.wordBasedSuggestions": "matchingDocuments",
+    "typescript.validate.enable": true,
+    "javascript.validate.enable": true
+}
