@@ -11,7 +11,7 @@ classDiagram
         - clock: LamportClock
         + generateId() ID
         + updateTime(): void
-        + compareTime(aID, bID) boolean
+        + compareTime(aID, bID) boolean 
     }
     
     class Operation~Item~ {
@@ -22,7 +22,7 @@ classDiagram
         + id: ID
     }
 
-    class OperationToken {
+    class OperationManager {
         + consInsert(): OperationToken <<static>>
         + consDelete(): OperationToken <<static>>
         + consClone(): OperationToken <<static>>
@@ -40,8 +40,28 @@ classDiagram
         + find(predicate): Node<T>
     }
 
-    
+    class Doc~T~ {
+        - head: Node<Operation<T>>
+        - clock: ClockWrapper
+        - staging: Operation<T>[]
+        - buffer: Operation<T>[]
+        + insert(value, parent[0..1]): void
+        + delete(id): void
+        + merge(operations): void
+        + list(): Node[]
+        - resolveConflict(op)
+    }
+
+    class Doc_note {
+        - merge: handles operations that arrive out of order
+        - resolveConflict: handles concurrent inserts
+    }
 
     ClockWrapper *-- LamportClock : clock
-    OperationToken ..|> Operation
+    OperationManager ..|> Operation
+    Doc~T~ .. Doc_note
+    Doc~T~ *-- Node~T~
+    Doc~T~ *-- OperationManager
+    Doc~T~ *-- ClockWrapper
+
 ```
