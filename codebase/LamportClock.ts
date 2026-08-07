@@ -12,4 +12,8 @@ export class LamportClock {
     public getCurrTime(): number {
         return this.currTime;
     }
+
+    public reset(): void {
+        this.currTime = 0
+    }
 }

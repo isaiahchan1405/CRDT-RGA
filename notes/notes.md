@@ -1,0 +1,1 @@
+change lamportclock and wrapper to an interface, easing maintanability 

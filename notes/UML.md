@@ -48,7 +48,7 @@ classDiagram
         + insert(value, parent[0..1]): void
         + delete(id): void
         + merge(operations): void
-        + list(): Node[]
+        + filterDeleted(): Node[]
         - resolveConflict(op)
     }
 
