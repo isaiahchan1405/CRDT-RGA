@@ -3,6 +3,7 @@ import { ID } from "./Interfaces";
 
 const DELIMITER = '::'
 
+// Holy shit man i gotta figure out reassignment
 export class ClockWrapper {
     private clock: LamportClock;
 

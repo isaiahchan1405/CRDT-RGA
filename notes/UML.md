@@ -23,9 +23,10 @@ classDiagram
     }
 
     class OperationManager {
+        + hash(OperationToken): string
+        + toToken(string): OperationToken
         + consInsert(): OperationToken <<static>>
         + consDelete(): OperationToken <<static>>
-        + consClone(): OperationToken <<static>>
     }
 
     class Node~T~ {

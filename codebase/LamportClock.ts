@@ -5,8 +5,12 @@ export class LamportClock {
         this.currTime = startTime;
     }
 
-    public update(): void {
+    public tick(): void {
         this.currTime++;
+    }
+
+    public update(): void {
+        
     }
 
     public getCurrTime(): number {
