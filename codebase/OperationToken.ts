@@ -18,8 +18,24 @@ export class OperationToken<T> implements Operation<T> {
         return new OperationToken<T>('delete', operation.id)
     }
 
-    public hash(token: OperationToken<T>) {
+    // Given id is unique, the string produced will be unique too
+    public stringifyToken(token: Operation<T>): string {
         const args: any[] = [token.type, token.id]
+        if (token.type == 'insert') args.push([token.value, token.parent])
+        return JSON.stringify(args)
+    }
 
+    // Type management is a pain in the ass
+    public tokenizeString(message: string): OperationToken<T> {
+        const [type, id, value, parent]: any[] = JSON.parse(message)
+
+        switch(type as OperationToken<T>['type']) {
+            case 'insert':
+                return OperationToken.consInsert({id, value, parent})
+            case 'delete':
+                return OperationToken.consDelete({id})
+            default:
+                throw new Error('No such type')
+        }
     }
 }
