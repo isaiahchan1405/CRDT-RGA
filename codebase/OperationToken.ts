@@ -3,10 +3,10 @@ import { Operation, ID } from "./Interfaces"
 // To create a Operation reference
 export class OperationToken<T> implements Operation<T> {
     private constructor(
-        private type: string, 
-        private id: ID, 
-        private value?: T, 
-        private parent?: ID) {}
+        public type: string, 
+        public id: ID, 
+        public value?: T, 
+        public parent?: ID) {}
     
     //Pick and Omit look unnessarily complicated but its not that deep, just
     //used to look more precise

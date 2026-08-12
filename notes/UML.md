@@ -53,14 +53,17 @@ classDiagram
         - resolveConflict(op)
     }
 
-    class Doc_note {
-        - merge: handles operations that arrive out of order
-        - resolveConflict: handles concurrent inserts
+    class RGA_algorithm {
+        <<interface>>
+        + insert()
+        + delete()
+        + commit()
+        + merge()
     }
 
+    Doc~T~  <|.. RGA_algorithm : implements
     ClockWrapper *-- LamportClock : clock
     OperationManager ..|> Operation
-    Doc~T~ .. Doc_note
     Doc~T~ *-- Node~T~
     Doc~T~ *-- OperationManager
     Doc~T~ *-- ClockWrapper

@@ -1,8 +1,8 @@
 export type ID = string;
 
-export interface Operation<Item> {
+export interface Operation<Item = any> {
     type: 'insert' | 'delete'
-    parent: ID
+    id: ID
     value?: Item
-    id?: ID
+    parent?: ID
 }
