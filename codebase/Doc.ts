@@ -11,48 +11,47 @@ const compareToken = (a: Operation, b: Operation) => {
 
   return ClockWrapper.compareTime(a.id, b.id);
 }
+const ROOT_NODE_ID = 'DOC_ROOT';
 
 export class Doc<T> {
     private head: Node<T>
     private clock: ClockWrapper
     private staging: Operation[]
     private buffer: Operation[]
+    // Permanently stores all operations, no garbage collection implemented
     private operationLogs: {
         insert: Map<ID, {operation: Operation; children: Operation[]}>;
         delete: Set<ID>
     }
 
-    // Takes care of concurrent/same-time operations, while handling duplicate operations(im not sure if TCP causes this, but ill just implement it rn)
+    // Takes care of concurrent/same-time operations APPLIED TO THE SAME PARENT, 
+    // while handling duplicate operations(im not sure if TCP causes this, but ill just implement it rn)
     // and untimely sent operations
     private resolveConflict(operation: Operation<T>): Operation<T> | undefined {
-        // Im not sure if cloning is neccessary, but its good to implement it later
+        // Im not sure if cloning is neccessary, but I suppose its good to make sure objects remain pure
         const opCopy = OperationToken.clone(operation)
 
-        this.operationLogs.find(opCopy.)
-        switch
+        // Theres no need to add a already added operation (Idempotency)
+        if (this.operationLogs.insert.has(opCopy.id) || this.operationLogs.delete.has(opCopy.id))
+            return undefined
 
-        const resolveOperation = OperationToken.clone(operation);
-        switch (operation.type) {
-        case 'insert': {
-            if (this.operations.insert.has(operation.id)) return undefined;
-            const duplicate = this.operations.insert.get(
-            resolveOperation.parent ?? ROOT_NODE_ID,
-            )?.children;
-            if (!duplicate) throw new Error('Not Found Node');
-            const parent = duplicate.find(
-            dp => compareToken(resolveOperation, dp) == -1,
-            );
-            if (parent) {
-            resolveOperation.parent = parent.id;
-            return this.resolveConflict(resolveOperation);
-            }
-            return resolveOperation;
+        switch (opCopy.type) {
+            case 'delete':
+                return opCopy
+            case 'insert':
+                // Check for ordering correctness - by comparing existing children and current operation to work with
+                const duplicate = this.operationLogs.insert.get(opCopy.parent ?? ROOT_NODE_ID)?.children
+                if (!duplicate) throw new Error('No Node Found');
+
+                const parent = duplicate.find(dp => compareToken(opCopy, dp) == -1);
+                if (parent) {
+                    opCopy.parent = parent.id;
+                    return this.resolveConflict(opCopy);
+                }
+                return opCopy;
+            default:
+                throw new Error('Invalid Operation Type')
         }
-        case 'delete': {
-            if (this.operations.delete.has(operation.id)) return undefined;
-        }
-        }
-        return resolveOperation;
     }
 
     public insert(op: Operation<T>, parent?: Operation<T>): void {
