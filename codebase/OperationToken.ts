@@ -3,7 +3,7 @@ import { Operation, ID } from "./Interfaces"
 // To create a Operation reference
 export class OperationToken<T> implements Operation<T> {
     private constructor(
-        public type: string, 
+        public type: Operation<T>['type'], 
         public id: ID, 
         public value?: T, 
         public parent?: ID) {}
@@ -16,6 +16,17 @@ export class OperationToken<T> implements Operation<T> {
 
     public static consDelete<T>(operation: Pick<Operation<T>, 'id'>) {
         return new OperationToken<T>('delete', operation.id)
+    }
+
+    public static clone<T>(operation: Operation<T>): OperationToken<T> {
+        switch (operation.type) {
+            case 'insert':
+                return OperationToken.consInsert(operation)
+            case 'delete':
+                return OperationToken.consDelete(operation)
+            default:
+                throw new Error('No such type')
+        }
     }
 
     // Given id is unique, the string produced will be unique too

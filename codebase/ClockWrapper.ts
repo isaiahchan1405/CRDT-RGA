@@ -25,7 +25,7 @@ export class ClockWrapper {
         this.clock.reset()
     }
 
-    // A came before b?
+    // A came before b
     public static compareTime(aId: ID, bId: ID): 1 | -1 {
         const [aName, aTime] = aId.split(DELIMITER)
         const [bName, bTime] = bId.split(DELIMITER)
