@@ -1,5 +1,6 @@
 import { LamportClock } from "./LamportClock";
 import { ID } from "./Interfaces";
+import { max } from "lodash";
 
 const DELIMITER = '::'
 
@@ -13,16 +14,22 @@ export class ClockWrapper {
     }
 
     public generateId(): ID {
-        this.clock.update();
-        return `${this.clientId} + DELIMITER + ${this.clock.getCurrTime}`;
+        this.clock.tick();
+        return `${this.clientId}${DELIMITER}${this.clock.getCurrTime()}`;
     }
 
-    public updateTime(): void {
-        this.clock.update()
+    public updateTime(newTime: number): void {
+        this.clock.currTime = Math.max(newTime, this.clock.currTime)
     }
 
     public reset(): void {
         this.clock.reset()
+    }
+
+    public static extract(id: string) {
+        const [client, time] = id.split(DELIMITER)
+        
+        return {client, time: +time}
     }
 
     // A came before b

@@ -24,7 +24,20 @@ export class Doc<T> {
         delete: Set<ID>
     }
 
-    // Takes care of concurrent/same-time operations APPLIED TO THE SAME PARENT, 
+    constructor(clientId: string) {
+        this.clock = new ClockWrapper(clientId)
+        this.staging = []
+        this.buffer = []
+
+        const rootOperation: Operation<T> = { type: 'insert', id: ROOT_NODE_ID }
+        this.head = new Node<Operation<T>>(rootOperation)
+        this.operationLogs = {
+            insert: new Map([[ROOT_NODE_ID, { operation: rootOperation, children: [] }]]),
+            delete: new Set()
+        }
+    }
+
+    // Takes care of concurrent/same-time operations APPLIED TO THE SAME PARENT,
     // while handling duplicate operations(im not sure if TCP causes this, but ill just implement it rn)
     // and untimely sent operations
     private resolveConflict(operation: Operation<T>): Operation<T> | undefined {
@@ -53,15 +66,16 @@ export class Doc<T> {
         }
     }
 
-    private recordOperation(operation: Operation<T>) {
+    private recordOperation(operation: Operation<T>):void {
         switch (operation.type) {
             case 'insert':
                 this.operationLogs.insert.set(operation.id, { operation, children: [] })
                 const parentId = operation.parent ?? ROOT_NODE_ID
-                const parent = this.operationLogs.insert.get(parentId)!
-                parent.children.push(operation)
-                parent.children.sort(compareToken)
-                this.operationLogs.insert.set(parentId, parent)
+                const parentContent = this.operationLogs.insert.get(parentId)!
+
+                parentContent.children.push(operation)
+                parentContent.children.sort(compareToken)
+                this.operationLogs.insert.set(parentId, parentContent)
                 break
             case 'delete':
                 this.operationLogs.delete.add(operation.id);
@@ -70,16 +84,15 @@ export class Doc<T> {
     }
 
     // Corrects the operations through resolvedOperation, then add to the linked-llist
-    private apply(operation: Operation<T>) {
+    private apply(operation: Operation<T>): void {
         const resolvedOperation = this.resolveConflict(operation);
         
         // Idempotency
-        if (!resolvedOperation) return;
+        if (!resolvedOperation) return
 
         switch (resolvedOperation.type) {
             case 'delete': 
                 this.head.find(node => node.value.id == resolvedOperation.id)!.softDelete()
-                return
             
             case 'insert': 
                 let parentPrime: Node<Operation<T>> | undefined
@@ -91,7 +104,6 @@ export class Doc<T> {
                 if (!parentPrime) throw new Error('ID-Decoupled Node Found')
 
                 parentPrime.append(new Node<Operation<T>>(resolvedOperation))
-                return
             
             default:
                 throw new Error('Invalid Operation Type')
@@ -111,9 +123,33 @@ export class Doc<T> {
         return cleaned
     }
 
-    public 
+    private canProcessOperation(operation: Operation<T>): boolean {
+        switch (operation.type) {
+            case 'insert':
+                // True if parent is the root, if not the root, check if it really is logged
+                return !operation.parent || this.operationLogs.insert.has(operation.parent)
+            case 'delete':
+                return this.operationLogs.insert.has(operation.id);
+            default:
+                throw new Error('Invalid Operation Type')
+        }
+    }
 
-    public insert(op: Operation<T>, parent?: Operation<T>): void {
-        
+    merge(operations: Operation<T>[]): void {
+        const times = operations.map(op => ClockWrapper.extract(op.id).time)
+
+        const maxClock = Math.max(...times)
+        this.clock.updateTime(maxClock)    
+
+        const buffer = this.buffer.splice(0)
+        const targets = [...operations, ...buffer].sort(compareToken)
+        targets.forEach(operation => {
+            if (!this.canProcessOperation(operation)) {
+                this.buffer.push(operation)
+                return
+            }
+            this.apply(operation)
+        }
+        )
     }
 }

@@ -1,5 +1,5 @@
 export class LamportClock {
-    private currTime: number;
+    public currTime: number;
 
     constructor(startTime = 0) {
         this.currTime = startTime;
