@@ -9,8 +9,9 @@ export class LamportClock {
         this.currTime++;
     }
 
-    public update(): void {
-        
+    // Called on observing a remote time: never move backwards.
+    public update(observedTime: number): void {
+        if (Number.isFinite(observedTime)) this.currTime = Math.max(observedTime, this.currTime);
     }
 
     public getCurrTime(): number {

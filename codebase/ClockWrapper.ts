@@ -1,15 +1,12 @@
 import { LamportClock } from "./LamportClock";
 import { ID } from "./Interfaces";
-import { max } from "lodash";
 
 const DELIMITER = '::'
 
-// Holy shit man i gotta figure out reassignment
 export class ClockWrapper {
     private clock: LamportClock;
 
     constructor(public readonly clientId: string) {
-        this.clientId = clientId
         this.clock = new LamportClock()
     }
 
@@ -19,7 +16,7 @@ export class ClockWrapper {
     }
 
     public updateTime(newTime: number): void {
-        this.clock.currTime = Math.max(newTime, this.clock.currTime)
+        this.clock.update(newTime)
     }
 
     public reset(): void {
@@ -28,17 +25,19 @@ export class ClockWrapper {
 
     public static extract(id: string) {
         const [client, time] = id.split(DELIMITER)
-        
+
         return {client, time: +time}
     }
 
-    // A came before b
-    public static compareTime(aId: ID, bId: ID): 1 | -1 {
-        const [aName, aTime] = aId.split(DELIMITER)
-        const [bName, bTime] = bId.split(DELIMITER)
-        
-        if (bTime > aTime) return 1
-        if (aTime > bTime) return -1
-        return 1
+    // Total order over IDs, usable directly with Array.sort (ascending = older first).
+    // Compares Lamport times numerically, then breaks ties by clientId so that two
+    // distinct IDs are never "equal" and every replica sorts them the same way.
+    public static compareTime(aId: ID, bId: ID): -1 | 0 | 1 {
+        const a = ClockWrapper.extract(aId)
+        const b = ClockWrapper.extract(bId)
+
+        if (a.time !== b.time) return a.time < b.time ? -1 : 1
+        if (a.client !== b.client) return a.client < b.client ? -1 : 1
+        return 0
     }
 }

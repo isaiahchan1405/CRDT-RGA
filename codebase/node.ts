@@ -7,8 +7,9 @@ export class Node<T> {
         this.deleted = false
     }
 
+    // Searches in both directions starting from this node
     public find(pred: Predicate<T>): Node<T>|undefined {
-        return this.findRight(pred) || this.findRight(pred)
+        return this.findLeft(pred) || this.findRight(pred)
     }
 
     public softDelete(): void {
@@ -29,7 +30,7 @@ export class Node<T> {
     public findRight(pred: Predicate<T>): Node<T>|undefined {
         let node: undefined | Node<T> = this
         while (node && !pred(node)) {
-            node = node?.right
+            node = node.right
         }
         return node
     }
@@ -37,7 +38,7 @@ export class Node<T> {
     public findLeft(pred: Predicate<T>): Node<T>|undefined {
         let node: undefined | Node<T> = this
         while (node && !pred(node)) {
-            node = node?.left
+            node = node.left
         }
         return node
     }

@@ -12,10 +12,13 @@ export interface Client<T> {
 }
 
 export function makeClient<T>(clientId: string): Client<T> {
+  // The doc and the client share one clock, so merge() advances the clock
+  // that mints this client's ids.
+  const clock = new ClockWrapper(clientId);
   return {
     clientId,
-    clock: new ClockWrapper(clientId),
-    doc: new Doc<T>(clientId),
+    clock,
+    doc: new Doc<T>(clientId, clock),
   };
 }
 
