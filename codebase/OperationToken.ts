@@ -1,53 +1,66 @@
-import { Operation, ID } from "./Interfaces"
+import { Operation, ID } from "./Interfaces";
 
-// To create a Operation reference
+/**
+ * A concrete Operation.
+ *
+ * Build one with `consInsert` or `consDelete`, so an operation can't carry
+ * fields that don't belong to its type (e.g. a delete with a value).
+ */
 export class OperationToken<T> implements Operation<T> {
     private constructor(
-        public type: Operation<T>['type'], 
-        public id: ID, 
-        public value?: T, 
-        public parent?: ID) {}
-    
-    //Pick and Omit look unnessarily complicated but its not that deep, just
-    //used to look more precise
-    public static consInsert<T>(operation: Omit<Operation<T>, 'type'>) {
-        return new OperationToken<T>('insert', operation.id, operation.value, operation.parent)
+        public type: Operation<T>["type"],
+        public id: ID,
+        public value?: T,
+        public parent?: ID,
+    ) {}
+
+    /** Insert `value` after node `parent` (no parent = top of the document). */
+    public static consInsert<T>(op: Omit<Operation<T>, "type">): OperationToken<T> {
+        return new OperationToken<T>("insert", op.id, op.value, op.parent);
     }
 
-    public static consDelete<T>(operation: Pick<Operation<T>, 'id'>) {
-        return new OperationToken<T>('delete', operation.id)
+    /** Delete the node with this id. */
+    public static consDelete<T>(op: Pick<Operation<T>, "id">): OperationToken<T> {
+        return new OperationToken<T>("delete", op.id);
     }
 
-    public static clone<T>(operation: Operation<T>): OperationToken<T> {
-        switch (operation.type) {
-            case 'insert':
-                return OperationToken.consInsert(operation)
-            case 'delete':
-                return OperationToken.consDelete(operation)
-            default:
-                throw new Error('No such type')
-        }
+    /** A fresh copy, without any fields that don't belong to its type. */
+    public static clone<T>(op: Operation<T>): OperationToken<T> {
+        return op.type === "insert"
+            ? OperationToken.consInsert(op)
+            : OperationToken.consDelete(op);
     }
 
-    // Given id is unique, the string produced will be unique too
-    public static stringifyToken<T>(token: Operation<T>): string {
-        const args: any[] = [token.type, token.id]
-        if (token.type == 'insert') args.push(token.value, token.parent)
-        return JSON.stringify(args)
+    // -----------------------------------------------------------------
+    // Sending over the network
+    //
+    // Format is a flat JSON array:
+    //   insert -> ["insert", id, value, parent]
+    //   delete -> ["delete", id]
+    // stringifyToken and tokenizeString must change together.
+    // -----------------------------------------------------------------
+
+    public static stringifyToken<T>(op: Operation<T>): string {
+        return op.type === "insert"
+            ? JSON.stringify([op.type, op.id, op.value, op.parent])
+            : JSON.stringify([op.type, op.id]);
     }
 
-    // Type management is a pain in the ass
     public static tokenizeString<T>(message: string): OperationToken<T> {
-        const [type, id, value, parent]: any[] = JSON.parse(message)
+        const [type, id, value, parent] = JSON.parse(message);
 
-        switch(type as OperationToken<T>['type']) {
-            case 'insert':
-                // JSON turns undefined into null inside arrays; map it back
-                return OperationToken.consInsert({id, value: value ?? undefined, parent: parent ?? undefined})
-            case 'delete':
-                return OperationToken.consDelete({id})
+        switch (type) {
+            case "insert":
+                // JSON turns undefined into null inside arrays, so turn it back
+                return OperationToken.consInsert({
+                    id,
+                    value: value ?? undefined,
+                    parent: parent ?? undefined,
+                });
+            case "delete":
+                return OperationToken.consDelete({ id });
             default:
-                throw new Error('No such type')
+                throw new Error(`Unknown operation type: ${type}`);
         }
     }
 }
