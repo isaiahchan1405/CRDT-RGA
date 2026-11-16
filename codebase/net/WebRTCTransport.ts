@@ -80,6 +80,7 @@ export class WebRTCTransport implements Transport {
                 this.handleSignal(from, message).catch(() => this.disconnect(from));
             }),
         ];
+        signaler.peers().forEach(id => this.connect(id));
     }
 
     // ---------------------------------------------------------------------
