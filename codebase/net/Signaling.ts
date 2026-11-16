@@ -12,12 +12,17 @@ export type SignalMessage =
  * A side channel (e.g. a WebSocket server) that introduces peers in a room
  * and relays their setup messages.
  *
- * When a peer joins, existing peers get `onPeerJoin` for it, and it gets
- * `onPeerJoin` for each existing peer.
+ * A Signaler is handed over already in the room. Peers that were there
+ * before it are listed by `peers()`; peers that arrive later are announced
+ * through `onPeerJoin`. (Announcing the early ones as events instead would
+ * lose them, since nobody is subscribed yet when they arrive.)
  */
 export interface Signaler {
     /** This peer's id, unique in the room. */
     readonly selfId: PeerId;
+
+    /** Other peers in the room right now. */
+    peers(): PeerId[];
 
     send(to: PeerId, message: SignalMessage): void;
 
